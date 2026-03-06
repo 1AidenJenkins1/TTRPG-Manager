@@ -1,0 +1,44 @@
+<!-- PAGE-MainMenu.html -->
+
+<!-- Main Menu Page -->
+<div id='page-mainMenu' class='pipboyBackground'>
+
+  <div id='mainMenu-title' class='text blockSelect'>
+    <h>FALLOUT<span class='acronym'> N.U.C.L.E.A.R</span></h>
+  </div>
+
+  <div id='mainMenu-subtitle' class='text'>
+    <h1>Manager and Creator</h1>
+  </div>
+
+  <br><br><br>
+
+  <div id='mainMenu-menus' style='display: inline-flex;'>
+    <div id='mainMenu-menu-buttonMenu' class='menu --menuBorderTop --menuBorderBottom --menuBorderLeft'>
+      <div id='mainMenu-buttonMenu-buttons' class='menu-btn-group'>
+        <button id='mainMenu-btn-continue'>CONTINUE</button>
+        <button id='mainMenu-btn-new'>NEW</button>
+        <button id='mainMenu-btn-load'>LOAD</button>
+        <button id='mainMenu-btn-settings'>SETTINGS</button>
+      </div>
+
+      <label class='--toggle-btn'>
+        <input type='checkbox' id='mainMenu-tgl-btn-load-state'>
+        <input type='checkbox' id='mainMenu-tgl-btn-settings-state'>
+      </label>
+    </div>
+
+    <div id='mainMenu-submenu-settings' class='menu submenu --menuBorderTop --menuBorderBottom' style='opacity:0;'>
+      <p3 style='position:absolute; top: 8px; left: 8px;'>Version: <?!= VERSION ?></p3>
+      <div id='settingsArea' class='settings'></div>
+      <div class='menu-btn-submenu --submenu-below --submenu-center'>
+        <button id='mainMenu-btn-settings-save' class='menu-btn'>SAVE</button>
+      </div>  
+    </div>
+
+    <div id='mainMenu-submenu-load' class='menu submenu --menuBorderTop --menuBorderBottom' style='opacity:0;'>
+    </div>
+  </div>
+
+</div>
+

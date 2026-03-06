@@ -1,0 +1,522 @@
+<!-- JS-PageManager.html -->
+
+<script id='JS-PageManager'>
+
+// manages all page loading and page event listeners
+class PageManager {
+
+  static {
+    this.eventListeners = new Map();
+  }
+
+  
+// LOADING \\
+
+  // Dom Load
+  static async domLoad() {
+    await new Promise(resolve => {
+      window.addEventListener("DOMContentLoaded", () => {
+        resolve();
+      }, { once: true });
+    });
+    return this;
+  }
+
+  // Page Load
+  static async pageLoad() {
+    await new Promise(resolve => {
+      window.addEventListener("load", () => {
+        resolve();
+      }, { once: true });
+    });
+    return this;
+  }
+
+  // loading screen
+  static async loadingScreen(state) {
+    const loadingScreen = document.getElementById("loading-screen");
+    const content = document.getElementById("content");
+    switch (state){
+      case "on":
+        loadingScreen.style.display = "block";
+        content.style.display = "none";
+        break;
+      case "off":
+        loadingScreen.style.display = "none";
+        content.style.display = "block";
+        break;
+    }
+  }
+
+// Open Page \\
+
+  // Clears Content And Event Listeners And Then Attaches New Page Content And Event Listeners
+  static async openPage(pageName) {
+    console.log(`Open (${pageName}) Called`);
+
+    this.removeAllListeners();
+
+    this.loadingScreen("on");
+
+    console.groupCollapsed(`Opening (${pageName})`);
+    console.time(`Time To Open (${pageName})`);
+
+    // get content of html file
+    await new Promise(resolve => {
+      google.script.run
+        .withSuccessHandler((content) => {
+          document.getElementById("content").innerHTML = content;
+          resolve();
+        })
+        .getContent(`PAGE-${pageName}`);
+    });
+
+    // run set up for the page
+    switch(pageName) {
+      case "MainMenu":
+        await this.setupMainMenuPage();
+        break;
+      case "Creation":
+        await this.setupCreationPage();
+        break;
+    };
+
+    console.timeEnd(`Time To Open (${pageName})`);
+    console.groupEnd(`Opening (${pageName})`);
+
+    this.loadingScreen("off");
+  }
+
+
+// PAGE SET UP FUNCTIONS \\
+
+  // main menu page
+  static async setupMainMenuPage() {
+    console.groupCollapsed(`Setup For (Main Menu Page)`);
+       
+    await Settings.pushHtml();
+    Settings.addEventListeners();
+    Settings.pushValueOf("*");
+
+    const loadMenubtn = document.getElementById("mainMenu-btn-load");
+    const loadMenustate = document.getElementById("mainMenu-tgl-btn-load-state");
+
+    const settingsMenustate = document.getElementById("mainMenu-tgl-btn-settings-state");
+    const settingsMenubtn = document.getElementById("mainMenu-btn-settings");
+
+    const loadMenu = document.getElementById("mainMenu-submenu-load");
+    const settingsMenu = document.getElementById("mainMenu-submenu-settings");
+
+    await fadeElement({ elementId: ("mainMenu-submenu-settings"), type: ("out") });
+    await fadeElement({ elementId: ("mainMenu-submenu-load"), type: ("out") });
+
+    // get elements of menu page and set up event listeners
+    const elements = {
+      continueButton: {
+        element: document.getElementById("mainMenu-btn-continue"),
+        events: [
+          { type: "click", 
+            handler: () => { 
+              console.log("TEST"); 
+            } 
+          }
+        ]
+      },
+      newButton: {
+        element: document.getElementById("mainMenu-btn-new"),
+        events: [
+          { type: "click", 
+            handler: () => {
+              this.openPage("Creation");
+            }
+          }
+        ]
+      },
+      loadButton: {
+        element: document.getElementById("mainMenu-btn-load"),
+        events: [
+          { type: "click", 
+            handler: async () => {
+              if (settingsMenustate.checked) { 
+                settingsMenustate.checked = false; 
+                settingsMenubtn.classList.remove("--btn-solid"); 
+                await fadeElement({ 
+                  elementId: ("mainMenu-submenu-settings"), 
+                  type: ("out"), 
+                  direction: ("left"), 
+                  duration: (0.5), 
+                  distance: ( parseInt(window.getComputedStyle(settingsMenu).marginLeft)) 
+                });
+              }
+              loadMenustate.checked = !loadMenustate.checked;
+              if (loadMenustate.checked) {  
+                loadMenubtn.classList.add("--btn-solid"); 
+                await fadeElement({ 
+                  elementId: ("mainMenu-submenu-load"), 
+                  type: ("in"), 
+                  direction: ("left"), 
+                  duration: (0.5), 
+                  distance: ( parseInt(window.getComputedStyle(loadMenu).marginLeft) || 0) 
+                });  
+              } 
+              else { 
+                loadMenubtn.classList.remove("--btn-solid"); 
+                await fadeElement({ 
+                  elementId: ("mainMenu-submenu-load"), 
+                  type: ("out"), 
+                  direction: ("left"), 
+                  duration: (0.5), 
+                  distance: ( parseInt(window.getComputedStyle(loadMenu).marginLeft) || 0) 
+                });
+              }
+            }
+          }
+        ]
+      },
+      settingsButton: {
+        element: document.getElementById("mainMenu-btn-settings"),
+        events: [
+          { type: "click", 
+            handler: async () => {
+              if (loadMenustate.checked) { 
+                loadMenustate.checked = false; 
+                loadMenubtn.classList.remove("--btn-solid"); 
+                await fadeElement({ 
+                  elementId: ("mainMenu-submenu-load"), 
+                  type: ("out"), 
+                  direction: ("left"), 
+                  duration: (0.5), 
+                  distance: ( parseInt(window.getComputedStyle(loadMenu).marginLeft) || 0) 
+                }); 
+              }
+
+              settingsMenustate.checked = !settingsMenustate.checked;
+
+              if (settingsMenustate.checked) { 
+                settingsMenubtn.classList.add("--btn-solid"); 
+                await fadeElement({ 
+                  elementId: ("mainMenu-submenu-settings"), 
+                  type: ("in"), 
+                  direction: ("left"), 
+                  duration: (0.5), 
+                  distance: ( parseInt(window.getComputedStyle(settingsMenu).marginLeft) || 0) 
+                });
+              } 
+              else { 
+                settingsMenubtn.classList.remove("--btn-solid"); 
+                await fadeElement({ 
+                  elementId: ("mainMenu-submenu-settings"), 
+                  type: ("out"), 
+                  direction: ("left"), 
+                  duration: (0.5), 
+                  distance: ( parseInt(window.getComputedStyle(settingsMenu).marginLeft) || 0) 
+                });
+              }
+            }
+          }
+        ]
+      },
+      saveButton: {
+        element: document.getElementById("mainMenu-btn-settings-save"),
+        events: [
+          { type: "click", 
+            handler: () => {
+              Settings.saveChanges();
+            }
+          }
+        ]
+      }
+    };
+    await this.addListeners(elements);
+
+    console.groupEnd(`Setup For (Main Menu Page)`);
+
+    return this;
+  }
+
+  // creation page
+  static async setupCreationPage() {
+    console.groupCollapsed(`Setup For (Creation Page)`);
+
+    let hideMenu = async () => {
+      await fadeElement({
+        elementId: ("creation-menu"), 
+        type: ("out"), 
+        direction: ("left"), 
+        duration: (0.5), 
+        distance: ( parseInt(window.getComputedStyle(document.getElementById("page-creation")).paddingLeft) || 0 )
+      });
+      return;
+    }
+
+    let showMenu = async () => {
+      await fadeElement({
+        elementId: ("creation-menu"), 
+        type: ("in"), 
+        direction: ("left"), 
+        duration: (0.5), 
+        distance: ( parseInt(window.getComputedStyle(document.getElementById("page-creation")).paddingLeft) || 0 )
+      });
+      return;
+    }
+
+    let hideCreateMenu = async () => {
+      await fadeElement({
+        elementId: ("create-menu"), 
+        type: ("out"), 
+        direction: ("down"), 
+        duration: (1), 
+        distance: ( parseInt(window.getComputedStyle(document.getElementById("page-creation")).paddingBottom) || 0 )
+      });
+      return;
+    }
+
+    let showCreateMenu = async () => {
+      await fadeElement({
+        elementId: ("create-menu"), 
+        type: ("in"), 
+        direction: ("down"), 
+        duration: (1), 
+        distance: ( parseInt(window.getComputedStyle(document.getElementById("page-creation")).paddingBottom) || 0 )
+      });
+      return;
+    }
+
+    let setCreateType = (text) => {
+      typeText({
+        text: (` ${text}`),
+        element: (document.getElementById("creation-title").querySelector('h').querySelector('span')),
+        animationType: ("retype"),
+        speed: (50)
+      });
+    }
+
+    let setupMenu = async () => {
+      const elements = {
+        characterButton: {
+          element: document.getElementById("creation-btn-character"),
+          events: [
+            { type: "click", 
+              handler: async () => {
+                await hideMenu();
+                setCreateType("CHARACTER");
+                await setupCreateMenu("character");
+                await showCreateMenu();
+              }
+            }
+          ]
+        },
+        perkButton: {
+          element: document.getElementById("creation-btn-perk"),
+          events: [
+            { type: "click", 
+              handler: async () => {
+                await hideMenu();
+                setCreateType("PERK");
+                await setupCreateMenu("perk");
+                await showCreateMenu();
+              }
+            }
+          ]
+        },
+        itemButton: {
+          element: document.getElementById("creation-btn-item"),
+          events: [
+            { type: "click", 
+              handler: async () => {
+                await hideMenu();
+                setCreateType("ITEM");
+                await setupCreateMenu("item");
+                await showCreateMenu();
+              }
+            }
+          ]
+        },
+        backButton: {
+          element: document.getElementById("creation-btn-back"),
+          events: [
+            { type: "click", 
+              handler: () => {
+                this.openPage("MainMenu");
+              }
+            }
+          ]
+        }
+      }
+      await this.addListeners(elements);
+      return;
+    }
+
+    let setupCreateMenu = async (type) => {
+      let createMenu = document.getElementById("create-menu");
+      let createMenuHtml = ``;
+      let elements = {};
+
+
+    const location = ("create " + type)
+
+    const navBar = Html.create.buttonSubmenu({
+      location,
+      buttons: ["back","prev","next","save"],
+      eventListeners: {
+        btnBack: {
+          events: [
+            { type: "click", 
+              handler: async () => {
+                await hideCreateMenu();
+                await this.removeAllListeners();
+                setCreateType("");
+                await setupMenu();
+                await showMenu();
+              }
+            }
+          ]
+        }
+      },
+      verticalPos: "above"
+    });
+
+    const createNameInputArea = (name) => {
+      return Html.create.input.textArea({
+        name,
+        location,
+        width: "large",
+        height: "small"
+    })};
+
+    // define html for create page type
+    switch (type) {
+      case "character":
+        createMenu.innerHTML = (`
+          <div id='createMenu-menu-createCharacter' class='menu submenu --menuBorderTop --menuBorderBottom' style='max-width:50vw;'>
+            ${navBar.html} 
+
+            ${createNameInputArea("Name").html}
+
+            ${ Html.create.input.dropdownArea({ options: (["none", "Human", "Ghoul", "Synth", "Super Mutant"]), name: ("RACE"), location }) }
+
+            ${ Html.create.input.dropdownArea({ options: (["none", "Survivalist", "Scavenger", "Doctor", "Sentinel", "Sharpshooter", "Gunslinger", "Mercenary", "Phycho"]), name: ("CLASS"), location }) }
+            
+          </div>
+          
+          <div id='createMenu-menu-createCharacter-displayArea'>
+          </div>
+        `);
+        break;
+      case "perk":
+        createMenu.innerHTML = (`
+          <div id='createMenu-menu-createPerk' class='menu submenu --menuBorderTop --menuBorderBottom'>
+            ${navBar.html} 
+            
+            ${createNameInputArea("Perk Name").html}
+        `);
+        break;
+      case "item":
+        createMenu.innerHTML = (`
+          <div id='createMenu-menu-createItem' class='menu submenu --menuBorderTop --menuBorderBottom'>
+            ${navBar.html} 
+            
+            ${createNameInputArea("Item Name").html}
+        `);
+        break;
+      }
+
+      // define event listeners for elements
+      elements = {
+        navBarBack: {
+          element: document.getElementById(`${location.toCamelCase()}-btn-back`),
+          events: navBar.eventListeners.btnBack.events
+        }
+      };
+
+      // attach element event listeners
+      await this.addListeners(elements);
+      return;
+    }
+
+    setupMenu();
+    showMenu();
+    console.groupEnd(`Setup For (Creation Page)`);
+
+    return this;
+  }
+
+/*
+    const characterSpecial = new Special({
+      strength: 5,
+      perception: 5,
+      endurance: 5,
+      charisma: 5,
+      intelligence: 5,
+      agility: 5,
+      luck: 5
+    });
+    const character = new Character({
+      name: "Bobbert Henderson",
+      special: characterSpecial.getAll()
+    });
+
+    character.saveData();
+*/
+
+
+// Manage Page Event Listeners \\ 
+
+  // add listeners
+  static addListeners(elements) {
+    console.groupCollapsed(`Adding Event Listeners:`);
+    for (const [key, config] of Object.entries(elements)) {
+      if (config.element) {
+        const domElement = document.getElementById(config.element.id);
+        config.events.forEach(event => {
+          try {
+            console.groupCollapsed(`-- Adding Event Listener To: (${config.element.id})`);
+            console.log(`Type: ${event.type}`);
+            console.log(`Handler: ${event.handler}`);
+            console.groupEnd(`-- Adding Event Listener To: (${config.element.id})`);
+            domElement.addEventListener(event.type, event.handler);
+            const listenerKey = `${key}-${event.type}`;
+            this.eventListeners.set(listenerKey, {
+              element: domElement,
+              type: event.type,
+              handler: event.handler
+            });
+          }
+          catch(error) {
+            console.error(`ERROR: ${error}`);
+          }
+        });
+      }
+    }
+    console.log(`Event Listeners Added`);
+    console.groupEnd(`Adding Event Listeners:`);
+    return this;
+  }
+
+  // remove Listeners
+  static removeAllListeners() {
+    try {
+    console.groupCollapsed(`Removing Event Listeners:`);
+    this.eventListeners.forEach((config, key) => {
+      console.groupCollapsed(`-- Removing Event Listener From: (${config.element.id})`);
+      console.log(`Type: ${event.type}`);
+      console.groupEnd(`-- Removing Event Listener From: (${config.element.id})`);
+      config.element.removeEventListener(config.type, config.handler);
+    });
+    this.eventListeners.clear();
+    console.log(`Event Listeners Removed`);
+    console.groupEnd(`Removing Event Listeners:`);
+    }
+    catch(error) {
+      console.error(error);
+    }
+
+    return this;
+  }
+
+
+}
+
+
+
+</script>

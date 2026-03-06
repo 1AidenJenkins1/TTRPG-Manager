@@ -1,0 +1,286 @@
+<!-- JS-HTMLFunctions.html -->
+
+<script id='JS-HTMLFunctions'>  
+
+const Html = {
+  create: {
+
+    label (args = {}) {
+      const {
+        target = "",
+        type = "",
+        textType = "h2",
+        name = `Unnamed ${type}`,
+        location = "misc"
+      } = args;
+      const label = `<label id='${location.toCamelCase()}-${type.toCamelCase()}-${name.toCamelCase()}-label' for='${target}' style='display:inline-block;'><${textType}>${name}</${textType}></label>`;
+      return label;
+    },
+
+    button (args = {}) {
+      const {
+        name = "Unnamed Button",
+        location = "misc",
+        grouped = false,
+        type = "none"
+      } = args;
+      const button = `<button id='${location.toCamelCase()}-btn-${name.toCamelCase()}' class='menu-btn'>${name.toUpperCase()}</button>`;
+      return button;
+    },
+
+    buttonArea(args = {}) {
+      const {
+        location = "misc",
+        buttons = [],
+        eventListeners = {},
+      } = args;
+
+    buttonSubmenu (args = {}) {
+      const {
+        location = "misc",
+        buttons = [],
+        eventListeners = {},
+        verticalPos = "below"
+      } = args;
+      const buttonSubmenuHtml = (`
+        <div class='menu-btn-submenu --submenu-${verticalPos}'>
+          ${buttons.map(btn => this.button({ name: (btn), location })).join('')}
+        </div>
+      `);
+      const buttonSubmenu = {
+        html: (buttonSubmenuHtml),
+        eventListeners
+      };
+      return buttonSubmenu;
+    },
+
+    input: {
+      text (args = {}) {
+        const {
+          width = "medium",
+          height = "medium",
+          overflow = "ellipsis",
+          name = "Unnamed Text Input",
+          location = "misc",
+          eventListeners = {}
+        } = args;
+        const textInputHtml = `<input id='${location.toCamelCase()}-input-text-${name.toCamelCase()}-input' type='text' class='textInput --height-${height} --width-${width}'>`;
+        const textInput = {
+          html: (textInputHtml),
+          eventListeners
+        };
+        return textInput;
+      },
+
+      textArea (args = {}) {
+        const {
+          width = "medium",
+          height = "medium",
+          overflow = "ellipsis",
+          name = "Unnamed Text Input Area",
+          location = "misc",
+          eventListeners = {}
+        } = args;
+
+        const locationCamelCase = location.toCamelCase();
+        const nameCamelCase = name.toCamelCase();
+
+        const textInput = Html.create.input.text({ width, height, overflow, name, location });
+        const textLabel = Html.create.label({ 
+          target: (`${locationCamelCase}-input-text-${nameCamelCase}-input`), 
+          type: ("input-text"), 
+          name, 
+          location 
+        });
+        const textInputArea = {
+          html: (`<div id='${locationCamelCase}-input-${nameCamelCase}'>${textLabel} ${textInput.html}</div>`),
+          eventListeners
+        };
+        return textInputArea;
+      },
+      
+      dropdown (args = {}) {
+        const {
+          options = [],
+          name = "",
+          location = ""
+        } = args;
+        const dropdownInput = 
+          `<div id='${location.toCamelCase()}-input-dropdown-${name.toCamelCase()}-input' class="dropdown"> 
+            <select>${options.map(option => `<option value="${option.toCamelCase()}">${option}</option>`).join('')}</select> 
+          </div>`;
+        return dropdownInput;
+      },
+
+      dropdownArea (args = {}) {
+        const {
+          options = [],
+          name = "",
+          location = "",
+          textType = "p1"
+        } = args;
+
+        const locationCamelCase = location.toCamelCase();
+        const nameCamelCase = name.toCamelCase();
+
+        const dropdownInput = Html.create.input.dropdown({ options, name, location });
+        const dropdownLabel = Html.create.label({ 
+          target: (`${locationCamelCase}-input-dropdown-${nameCamelCase}-input`), 
+          type: ("input-dropdown"), 
+          name: (name), 
+          location, 
+          textType
+        });
+        const dropdownArea = `<div id='${locationCamelCase}-input-dropdown-${nameCamelCase}' class="dropdown">${dropdownLabel} ${dropdownInput}</div>`;
+        return dropdownArea;
+      }
+
+    }
+    
+  },
+  animate: {
+    fadeElement({elementId, type, direction, duration, distance}) {
+      return new Promise(resolve => {
+        type = (typeof type === 'string')? type.toLowerCase() : "none";
+        direction = (typeof direction === 'string')? direction.toLowerCase() : "none";
+        duration = duration || 0;
+        duration *= 1000;
+        distance = distance || 0;
+
+        const element = document.getElementById(elementId);
+
+        let 
+          ease, 
+          opacityStart, 
+          opacityEnd, 
+          displayStart, 
+          displayEnd, 
+          visibilityStart, 
+          visibilityEnd;
+
+        let goIn = false;
+
+        switch (type) {
+          case "in":
+            ease = "ease-out";
+            opacityStart = 0;
+            opacityEnd = 1;
+            displayStart = "none";
+            displayEnd = "block";
+            visibilityStart = "hidden";
+            visibilityEnd = "visible";
+            goIn = true;
+            break;
+          case "out":
+            ease = "ease-in";
+            opacityStart = 1;
+            opacityEnd = 0;
+            displayStart = "block";
+            displayEnd = "none";
+            visibilityStart = "visible";
+            visibilityEnd = "hidden";
+            goIn = false;
+            break;
+          case "none":
+            if (window.getComputedStyle(element).getPropertyValue("opacity") > 0) {
+              ease = "ease-in";
+              opacityStart = 1;
+              opacityEnd = 0;
+              displayStart = "block";
+              displayEnd = "none";
+              visibilityStart = "visible";
+              visibilityEnd = "hidden";
+              goIn = false;
+            } 
+            else {
+              ease = "ease-out";
+              opacityStart = 0;
+              opacityEnd = 1;
+              displayStart = "none";
+              displayEnd = "block";
+              visibilityStart = "hidden";
+              visibilityEnd = "visible";
+              goIn = true;
+            }
+            break;
+        }
+
+        let 
+          yStart, 
+          yEnd, 
+          xStart, 
+          xEnd;
+
+        switch (direction) {
+          case "up":
+            xStart = 0;
+            xEnd = 0;
+            if (goIn) {
+              yStart = -distance;
+              yEnd = 0;
+            } else {
+              yStart = 0;
+              yEnd = -distance;
+            }
+            break;
+          case "down":
+            xStart = 0;
+            xEnd = 0;
+            if (goIn) {
+              yStart = distance;
+              yEnd = 0;
+            } else {
+              yStart = 0;
+              yEnd = distance;
+            }
+            break;
+          case "left":
+            yStart = 0;
+            yEnd = 0;
+            if (goIn) {
+              xStart = -distance;
+              xEnd = 0;
+            } else {
+              xStart = 0;
+              xEnd = -distance;
+            }
+            break;
+          case "right":
+            yStart = 0;
+            yEnd = 0;
+            if (goIn) {
+              xStart = distance;
+              xEnd = 0;
+            } else {
+              xStart = 0;
+              xEnd = distance;
+            }
+            break;
+          case "none":
+            xStart = 0;
+            yStart = 0;
+            xEnd = 0;
+            yEnd = 0;
+            break;
+        }
+
+        const animation = [
+          { offset: 0, opacity: opacityStart, transform: `translate(${xStart}px, ${yStart}px)`, display: displayStart },
+          { offset: 0.99, opacity: opacityEnd, transform: `translate(${xEnd}px, ${yEnd}px)` },
+          { offset: 1, opacity: opacityEnd, transform: `translate(${xEnd}px, ${yEnd}px)`, display: displayEnd }
+        ];
+
+        const animationTiming = {
+          duration: duration,
+          easing: ease,
+          fill: "forwards",
+        };
+
+        let animationObj = element.animate(animation, animationTiming);
+        animationObj.onfinish = () => resolve();
+      });
+    }
+  }
+}
+  
+</script>

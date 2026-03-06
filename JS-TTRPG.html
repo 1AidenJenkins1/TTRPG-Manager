@@ -1,0 +1,619 @@
+<!-- JS-TTRPG.html -->
+
+<script id='JS-TTRPG'> 
+// a characters skills as an object
+class Skills {
+  #skills;
+
+  constructor(args = {}){
+    const {
+      barter = 0,
+      energyWeapons = 0,
+      explosives = 0,
+      guns = 0,
+      lockpick = 0,
+      medicine = 0,
+      meleeWeapons = 0,
+      repair = 0,
+      science = 0,
+      sneak = 0,
+      speech = 0,
+      intimidation = 0,
+      survival = 0,
+      unarmed = 0
+    } = args;
+
+    this.#skills = {
+      barter,
+      energyWeapons,
+      explosives,
+      guns,
+      lockpick,
+      medicine,
+      meleeWeapons,
+      repair,
+      science,
+      sneak,
+      speech,
+      intimidation,
+      survival,
+      unarmed
+    };
+  }
+
+  get(name) {
+    return this.#skills[name];
+  }
+
+  getAll() {
+    return this.#skills;
+  }
+}
+
+// a characters SPECIAL stats as an object
+class Special {
+  #special;
+
+  constructor(args = {}) {
+    const {
+      strength = 0,
+      perception = 0,
+      endurance = 0,
+      charisma = 0,
+      intelligence = 0,
+      agility = 0,
+      luck = 0
+    } = args;
+
+    this.#special = {
+      strength,
+      perception,
+      endurance,
+      charisma,
+      intelligence,
+      agility,
+      luck
+    };
+  }
+
+  get(name) {
+    return this.#special[name];
+  }
+
+  getAll() {
+    return this.#special;
+  }
+}
+
+// flat and percent Modifiers for skills and special as a object
+class Modifiers {
+  constructor(sourceModifiers) {
+    this.modifiers = {
+      flat: {},
+      percent: {}
+    };
+
+    console.groupCollapsed("Creating Modifiers");
+    sourceModifiers.forEach(([stat, mod]) => {
+      console.groupCollapsed(`Creating ${mod.type} Modifier For ${stat}`);
+      console.log(mod);
+      
+      const type = mod.type.toLowerCase();
+      const currentValue = this.modifiers[type][stat] || 0;
+      const value = (type === "percent") 
+        ? (currentValue + (mod.value / 100)) 
+        : (mod.value);
+      
+      this.modifiers[type][stat] = Number(value.toFixed(2));
+      
+      console.groupEnd(`Creating ${mod.type} Modifier For ${stat}`);
+    });
+    console.groupEnd("Creating Modifiers");
+  }
+
+  getFlatModifier(stat) {
+    return this.modifiers.flat[stat] || 0;
+  }
+
+  getPercentModifier(stat) {
+    return this.modifiers.percent[stat] || 0;
+  }
+
+  getAll() {
+    return this.modifiers;
+  }
+}
+
+// uses a modifier object to define what a perk does and a requirments to define how to allow use of the perk
+class Perks {
+  static #perks = {};
+
+  static savePerk(perkObj) {
+    if (perkObj) {
+      Perks.#perks[perkObj.name] = perkObj;
+      return perkObj;
+    }
+    return null;
+  }
+
+  static has(name) {
+    if (name in Perks.#perks)
+    { return true; }
+    return false;
+  }
+
+  static get(name) {
+    if (Perks.has(name)) {
+      return Perks.#perks[name];
+    }
+    return null;
+  }
+
+  static getAll() {
+    return Perks.#perks;
+  }
+  
+  static createPerk (args = {}) {
+    const {
+      name = null,
+      imageUrl = "",
+      info = "",
+      modifier = new Modifiers()
+    } = args;
+
+    if (!name) 
+    { return null; }
+
+    if (Perks.has(name)) 
+    { return Perks.getPerk(name); }
+
+    const perkObj = {
+      name,
+      imageUrl,
+      info,
+      modifier
+    };
+
+    Perks.savePerk(perkObj);
+    return perkObj;
+  }
+}
+
+// uses a modifier object to define what a class does
+class Classes {
+  // Classes = [Class name, object( name, info, imageUrl, modifier)]
+  static #classes = {};
+
+  static loadFromFile() {
+    console.log("Loading TTRPG Classes");
+  }
+
+  static saveClass(classObj) {
+    if (classObj) {
+      Perks.#classes[classObj.com] = classObj;
+      return classObj;
+    }
+    return null;
+  }
+
+  static has(name) {
+    if (name in Classes.#classes)
+    { return true; }
+    return false;
+  }
+
+  static get(name) {
+    if (Classes.has(name)) {
+      return Classes.#classes[name];
+    }
+    return null;
+  }
+
+  static getAll() {
+    return Classes.#classes;
+  }
+  
+  static createClass (args = {}) {
+    const {
+      name = null,
+      imageUrl = "",
+      info = "",
+      modifier = new Modifiers()
+    } = args;
+
+    if (!name) {
+      return null;
+    }
+    if (Classes.has(name)) {
+      return Classes.getClass(name);
+    }
+
+    const classObj = {
+      name,
+      imageUrl,
+      info,
+      modifier
+    };
+
+    Classes.saveClass(classObj);
+    return classObj;
+  }
+}
+
+// the character class for the TTRPG saved as an object
+class Character {
+  constructor (args = {}) {
+    const {
+      name = "Unnamed Character",
+      id = createId(),
+      race = null,
+      characterClass = null,
+
+      special = null,
+      skills = {},
+      perks = [],
+      inventory = {}
+    } = args;
+
+    this.name = name;
+    this.id = id;
+    this.race = race;
+    this.class = characterClass;
+
+    this.special = special;
+    this.skills = skills;
+    this.perks = perks;
+    this.inventory = inventory;
+
+    return this;
+  }
+
+  saveData(type){
+    console.log("Saving Character");
+    google.script.run
+      .withSuccessHandler(() => 
+        { console.log("Character Saved!"); })
+      .saveData(
+        "Character", 
+        { data: (this) }
+      );
+  }
+
+  hasPerk(name) {
+    if (this.perks.get(name)) 
+    { return true; }
+    return false;
+  }
+
+  addPerk(perkObj) {
+    if (this.hasPerk(perkObj.name)) 
+    { return perkObj; }
+
+    this.perks.set(perkObj.name, perkObj);
+    return perkObj;
+  }
+
+  getPerks(){
+    return this.perks;
+  }
+
+  getPerk(name){
+    return this.perks.get(name);
+  }
+
+  hasClass(name) {
+    if (this.class == Classes.get(name)) 
+    { return true; }
+    return false;
+  }
+
+  addClass(classObj) {
+    if (this.hasClass(classObj.name)) 
+    { return classObj; }
+    this.class = classObj;
+    return classObj;
+  }
+
+  getClass(){
+    return this.class;
+  }
+}
+
+// saved code 
+  /* class Modifiers {
+    constructor (args = {}) {
+      const.allModifiers = new Map(
+        .map((modifier) => [])
+      );
+    }
+  }
+
+  class Character {
+    constructor ({}) {
+
+      // Basic Info
+      this.info = new Map([
+        ["Name", ""],
+        ["Race", ""],
+        ["Class", ""],
+        ["Origin", ""]
+      ]);
+
+      this.lore = new Map([
+        ["ImageUrl", ""],
+        ["Age", 0],
+        ["Height", 0],
+        ["Weight", 0],
+        ["Gender", ""],
+        ["HairColor", ""],
+        ["Background", ""],
+        ["Quote", ""],
+        ["Religion", "none"],
+        ["OtherInfo", ""]
+      ]);
+
+      // Stats
+      this.stat = new Map([
+        ["Health", 0],
+        ["Hunger", 0],
+        ["Thirst", 0],
+        ["Radiation", 0],
+        ["sanity", 0],
+        ["Level", 0],
+        ["Exp", 0]
+      ]);
+
+      // Special4
+      this.specialpoints = 0;
+
+      this.special = new Map([
+        ["Strength", 0],
+        ["Perception", 0],
+        ["Endurance", 0],
+        ["Charisma", 0],
+        ["Intelligence", 0],
+        ["Agility", 0],
+        ["Luck", 0]
+      ]);
+
+      this.specialMod = new Map([
+        ["Strength", 0],
+        ["Perception", 0],
+        ["Endurance", 0],
+        ["Charisma", 0],
+        ["Intelligence", 0],
+        ["Agility", 0],
+        ["Luck", 0]
+      ]);
+
+      // skills
+      this.skillpoints = 0;
+
+      this.skills = new Map([
+        ['Barter', 0],
+        ['Energy Weapons', 0],
+        ['Explosives', 0],
+        ['Guns', 0],
+        ['Lockpick', 0],
+        ['Medicine', 0],
+        ['Melee Weapons', 0],
+        ['Repair', 0],
+        ['Science', 0],
+        ['Sneak', 0],
+        ['Speech', 0],
+        ['Intimidation', 0],
+        ['Survival', 0],
+        ['Unarmed', 0]
+      ]);
+
+      this.skillMods = new Map([
+        ['Barter', 0],
+        ['Energy Weapons', 0],
+        ['Explosives', 0],
+        ['Guns', 0],
+        ['Lockpick', 0],
+        ['Medicine', 0],
+        ['Melee Weapons', 0],
+        ['Repair', 0],
+        ['Science', 0],
+        ['Sneak', 0],
+        ['Speech', 0],
+        ['Intimidation', 0],
+        ['Survival', 0],
+        ['Unarmed', 0]
+      ]);
+
+      // resistances 
+      this.resistances = new Map ([
+        ['Balistic', 0],
+        ['Energy', 0],
+        ['Raditation', 0],
+        ['Explosives', 0]
+      ]);
+
+      this.resistanceMods = new Map ([
+        ['Balistic', 0],
+        ['Energy', 0],
+        ['Raditation', 0],
+        ['Explosives', 0]
+      ]);
+
+
+    }
+  }
+
+  class Class {
+    static {
+      // all classes
+      allClasses = new Map();
+
+      // default classes
+      survivalist = new Class({
+        name: ("Survivalist"),
+        // imageUrl: (""),
+        classInfo: (`
+          Born with natural survival instincts, you thrive in the wasteland.
+          Your adaptable nature grants you:
+          • +5 to Survival skill
+          • +1 additional S.P.E.C.I.A.L point
+          • +15 additional skill points`
+        ),
+        modifiers: new Modifiers({
+          specialpointsMod: (+1),
+          skillpointsMod: (+15),
+          survivalMod: (+5)
+        })
+      });
+      scavenger = new Class({
+        name: ("Scavenger"),
+        // imageUrl: (""),
+        classInfo: (`
+          A natural tinkerer with an innate curiosity for how things work.
+          Your technical expertise grants you:
+          • +10 to Repair skill
+          • +10 to Science skill
+          • +1 to Intelligence`
+        ),
+        modifiers: new Modifiers({
+          intelligenceMod: (+1),
+          repairMod: (+10),
+          scienceMod: (+10)
+        })
+      });
+      doctor = new Class({
+        name: ("Doctor"),
+        // imageUrl: (""),
+        classInfo: (`
+          A rare beacon of hope in the wasteland, your medical expertise is unmatched.
+          Your knowledge grants you:
+          • +25 to Medicine skill
+          Your sterile practices make you one of the few trustworthy healers... hopefully.`
+        ),
+        modifiers: new Modifiers({
+          medicineMod: (+25)
+        })
+      });
+      sentinel = new Class({
+        name: ("Sentinel"),
+        // imageUrl: (""),
+        classInfo: (`
+          Naturally resilient since childhood, you're built like a brick wall.
+          Your physical prowess grants you:
+          • +1 to Strength
+          • +1 to Endurance
+          • +5 to Intimidation
+          • +5 to Ballistic damage resistance`
+        ),
+        modifiers: new Modifiers({
+          strengthMod: (+1),
+          enduranceMod: (+1),
+          intimidationMod: (+5),
+          balisticResistMod: (+5)
+        })
+      });
+      sharpshooter = new Class({
+        name: ("Sharpshooter"),
+        // imageUrl: (""),
+        classInfo: (`
+          Your precision with ranged weapons is legendary.
+          Your exceptional aim grants you:
+          • +1 to Perception
+          • +10 to Guns
+          • +10 to Energy Weapons
+          You can hit targets with surgical precision at remarkable distances.`
+        ),
+        modifiers: new Modifiers({
+          perceptionMod: (+1),
+          gunsMod: (+10),
+          energyWeaponsMod: (+10)
+        })
+      });
+      gunslinger = new Class({
+        name: ("Gunslinger"),
+        // imageUrl: (""),
+        classInfo: (`
+          A master of quick-draw combat, reminiscent of old western legends.
+          Your lightning-fast reflexes grant you:
+          • +1 to Agility
+          • +20 to Guns
+          Perfect for those who prefer speed and accuracy with pistols.`
+        ),
+        modifiers: new Modifiers({
+          agilityMod: (+1),
+          gunsMod: (+20)
+        })
+      });
+      mercenary = new Class({
+        name: ("Mercenary"),
+        // imageUrl: (""),
+        classInfo: (`
+          A professional in the art of silent elimination.
+          Your specialized training grants you:
+          • +1 to Agility
+          • +15 to Sneak
+          • +5 to all combat skills
+          Perfect for stealth operations and tactical strikes.`
+        ),
+        modifiers: new Modifiers({
+          agilityMod: (+1),
+          sneakMod: (+15),
+          gunsMod: (+5),
+          energyWeaponsMod: (+5),
+          meleeWeaponsMod: (+5)
+        })
+      });
+      psycho = new Class({
+        name: ("Psycho"),
+        // imageUrl: (""),
+        classInfo: (`
+          Your unstable nature makes you unpredictable and dangerous.
+          Your mental state grants you:
+          • +10 to all combat skills
+          • +5 to Intimidation
+          • -10 to all non-combat skills
+          • +1 to Agility
+          Your effectiveness varies with your sanity level.`
+        ),
+        modifiers: new Modifiers({
+          agilityMod: (+1),
+          gunsMod: (+10),
+          energyWeaponsMod: (+10),
+          explosivesMod: (+10),
+          meleeWeaponsMod: (+10),
+          unarmedMod: (+10),
+          intimidationMod: (+5),
+          barterMod: (-10),
+          lockpickMod: (-10),
+          medicineMod: (-10),
+          repairMod: (-10),
+          scienceMod: (-10),
+          sneakMod: (-10),
+          speechMod: (-10),
+          survivalMod: (-10)
+        })
+      });
+    }
+    
+    constructor (args = {}) {
+      this.name = args.name || "Unnamed Class";
+      this.imageUrl = args.imageUrl || "https://th.kanka.io/uEkq6KmIZIQ8MrQbUR-e5ZPnpKY=/400x400/smart/src/campaigns/277901/9d60a3fe-bcfa-4202-901e-3883263f1b53.png";
+      this.info = args.classInfo || "";
+      this.modifiers = args.modifiers || null;
+      Class.allClasses.set(this.name, this);
+    }
+
+    static getAllClasses() {
+      return Class.allClasses;
+    }
+
+    static getClass(className) {
+      return Class.allClasses.get(className);
+    }
+
+    static setClassesFromFile() {
+
+    }
+
+    getClassModifier
+  } */ 
+</script>

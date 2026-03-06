@@ -1,0 +1,21 @@
+<!-- JS-Main.html -->
+
+<script id='JS-Main'>  
+
+  async function main() {
+    console.time("Page Loading Time");
+    console.time("DOM Content Loading Time"); 
+
+    await PageManager.domLoad();
+    console.timeEnd("DOM Content Loading Time");
+    await PageManager.pageLoad();
+    console.timeEnd("Page Loading Time");
+
+    await addSettings();
+    
+    await PageManager.openPage('MainMenu');
+  }
+
+  main();
+  
+</script>

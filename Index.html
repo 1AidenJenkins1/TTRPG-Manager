@@ -1,0 +1,43 @@
+<!-- Index.html -->
+
+<!DOCTYPE html>
+
+<html>
+
+
+<head>
+    
+<base target="_top">
+<title>Fallout N.U.C.L.E.A.R CMC</title>
+<?!= include('CSS-Styles'); ?>
+
+</head>
+
+
+
+<body>
+
+<div id='loading-screen' class='pipboyBackground pipboyEffect'>
+  <div class='text'>
+    <p class='typeAnimation'> LOADING<p>
+  </div>
+</div>
+
+<!-- ↓ Page Content ↓ -->
+<div id="content"></div>
+<!-- ↑ Page Content ↑ -->
+
+<!-- ↓ Include Scripts ↓ -->
+  <?!= include('JS-TTRPG'); ?>
+  <?!= include('JS-Javascript'); ?>
+  <?!= include('JS-HTMLFunctions'); ?>
+  <?!= include('JS-Settings'); ?>
+  <?!= include('JS-Animations'); ?>
+  <?!= include('JS-PageManager'); ?>
+  <?!= include('JS-Main'); ?>
+<!-- ↑ Include Scripts ↑ -->
+
+</body>
+
+
+</html>

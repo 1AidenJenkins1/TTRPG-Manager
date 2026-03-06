@@ -1,0 +1,279 @@
+<!-- JS-Settings.html -->
+
+<script id='JS-Settings'>
+class Settings {
+  static {
+    this.currentSetting = null;
+    this.settings = new Map();
+    this.settingEvents = new Set();
+    this.settingsHtml = document.createElement("div");
+
+    this.unsavedSettings = new Set();
+  } 
+
+  static addSetting(name) {
+    console.log(`Creating Setting (${name})`);
+    this.currentSetting = name;
+    this.currentSettingCamelCase = this.currentSetting.toCamelCase();
+    const settingId = `setting-${this.currentSettingCamelCase}`;
+    const storedValue = localStorage.getItem(settingId);
+
+
+    if (!storedValue) {
+      this.settings.set(name, {});
+    } else {
+      this.settings.set(name, JSON.parse(storedValue));
+    }
+
+    const setting = this.settings.get(this.currentSetting);
+    setting.id = settingId;
+
+    return this;
+  }
+
+  static slider({min, max, step, defaultValue}) {
+    const setting = this.settings.get(this.currentSetting);
+    console.log(`-- (${this.currentSetting} Setting): Type Set To Slider`);
+    setting.type = "slider";
+    setting.min = Number(min) || 0;
+    setting.max = Number(max) || 100;
+    setting.step = Number(step) || 1;
+    setting.value = setting.value ?? defaultValue;
+    localStorage.setItem(`${setting.id}`, JSON.stringify(setting));
+    return this;
+  }
+
+  static getValue(name) {
+    console.log(`-- Getting Value of ${name}`);
+    const setting = this.settings.get(name);
+    return setting ? setting.value : null;
+  }
+
+  static saveChanges() {
+    console.groupCollapsed("Saving Settings");
+    
+    // Check if there are any unsaved settings
+    if (this.unsavedSettings.size === 0) {
+        console.log("No Changes To Save");
+        console.groupEnd("Saving Settings");
+        return;
+    }
+
+    this.unsavedSettings.forEach((name) => {
+        console.log(`Saving Changes To Setting (${name})`);
+        const setting = this.settings.get(name);
+        const domElement = document.getElementById(`${setting.id}-modifier-input`);
+        const domElementValueLabel = this.settingsHtml.querySelector(`#${setting.id}-value-label`);
+        const templateElement = this.settingsHtml.querySelector(`#${setting.id}-modifier-input`);
+
+        setting.value = Number(domElement.value);
+        localStorage.setItem(`${setting.id}`, JSON.stringify(setting));
+        templateElement.setAttribute('value', domElement.value);
+        domElementValueLabel.innerHTML = domElement.value;
+        this.settings.set(name, setting);
+        
+        domElement.dispatchEvent(new Event("pushValue"));
+    });
+
+    this.unsavedSettings.clear();
+    console.groupEnd("Saving Settings");
+}
+
+  static push(args = {}) {
+    const {
+      name = this.currentSetting,
+      withValueHandler = () => { console.log(`setting ${name} has pushed changes`); }
+    } = args;
+
+    console.log(`-- (${name} Setting): Pushing To Html`);
+
+    if (this.settingsHtml.querySelector(`#setting-${this.currentSettingCamelCase}`)) {
+      return this;
+    }
+    
+    const setting = this.settings.get(name);
+    const settingRow = document.createElement("div");
+    let elements = {}
+    
+    
+    settingRow.id = setting.id;
+    settingRow.className = "setting-row";
+
+    if (setting.type === "slider") {
+        settingRow.innerHTML = `
+          <div id='${setting.id}-label' class='setting-label'>${name}</div>
+          <div id='${setting.id}-value-label' class='setting-value-label'>${setting.value}</div>
+          <div class='setting-modifier'>
+            <button id='${setting.id}-slider-btn-down' class='arrow-btn --arrow-left'></button>
+            <input id='${setting.id}-modifier-input' type='range' class='slider'
+              value='${setting.value}'
+              min='${setting.min}'
+              max='${setting.max}'
+              step='${setting.step}'>
+            <button id='${setting.id}-slider-btn-up' class='arrow-btn --arrow-right'></button>
+          </div>
+        `;
+
+        this.settingsHtml.appendChild(settingRow);
+
+
+        const valueLabel = this.settingsHtml.querySelector(`#${setting.id}-value-label`);
+        const slider = this.settingsHtml.querySelector(`#${setting.id}-modifier-input`);
+        const btnUp = this.settingsHtml.querySelector(`#${setting.id}-slider-btn-up`);
+        const btnDown = this.settingsHtml.querySelector(`#${setting.id}-slider-btn-down`);
+
+        elements = {
+          valueLabel: {
+            element: valueLabel,
+            events: [
+              { type: "updateValue", handler: (event) => {
+                const slider = document.getElementById(`${setting.id}-modifier-input`);
+                const valueLabel = document.getElementById(`${setting.id}-value-label`);
+                valueLabel.innerHTML = slider.value;
+              }}
+            ]
+          },
+          slider: {
+            element: slider,
+            events: [
+              { type: "input", handler: (event) => { 
+                console.log(`(${settingRow.id}) Slider Value:`, event.target.value);
+
+                const valueLabel = document.getElementById(`${setting.id}-value-label`);
+                valueLabel.dispatchEvent(new Event("updateValue"));
+                if (event.target.value != setting.value) {
+                  this.unsavedSettings.add(name);
+                }
+              }}
+            ]
+          },
+          btnUp: {
+            element: btnUp,
+            events: [
+              { type: "click", handler: (event) => { 
+                console.log(`(${setting.id}) Up Button Clicked: `, event.timeStamp);
+
+                const slider = document.getElementById(`${setting.id}-modifier-input`);
+                const newValue = Number(slider.value) + Number(setting.step);
+                slider.value = Math.min(newValue, Number(setting.max));
+
+                console.log(`(${settingRow.id}) Slider Value:`, event.target.value);
+
+                const valueLabel = document.getElementById(`${setting.id}-value-label`);
+                valueLabel.dispatchEvent(new Event("updateValue"));
+                if (event.target.value != setting.value) {
+                  this.unsavedSettings.add(name);
+                }
+              }}
+            ]
+          },
+          btnDown: {
+            element: btnDown,
+            events: [
+              { type: "click", handler: (event) => { 
+                console.log(`(${setting.id}) Down Button Clicked: `, event.timeStamp);
+
+                const slider = document.getElementById(`${setting.id}-modifier-input`);
+                const newValue = Number(slider.value) - Number(setting.step);
+                slider.value = Math.max(newValue, Number(setting.min));
+
+                console.log(`(${settingRow.id}) Slider Value:`, event.target.value);
+
+                const valueLabel = document.getElementById(`${setting.id}-value-label`);
+                valueLabel.dispatchEvent(new Event("updateValue"));
+                if (event.target.value != setting.value) {
+                  this.unsavedSettings.add(name);
+                }
+              }}
+            ]
+          }
+        }
+    }
+    this.settingEvents.add(elements);
+
+    let valueHandler = {
+      pushValue: {
+        element: this.settingsHtml.querySelector(`#${setting.id}-modifier-input`),
+        events: [
+          { type: "pushValue", handler: withValueHandler }
+        ]
+      }
+    }
+
+    this.settingEvents.add(valueHandler);
+    return this;
+  }
+
+  static pushValueOf(name) {
+  name = name || this.currentSetting;
+  if (name) {
+    if (name == "*") {
+      console.groupCollapsed("Pushing All Values");
+      this.settings.forEach((setting, name) => {
+        try {
+          const domElement = document.getElementById(`${setting.id}-modifier-input`);
+          domElement.dispatchEvent(new Event("pushValue"));
+          console.log(`-- Pushed Value Of ${setting.id}`);
+        }   
+        catch (error) {
+          console.groupCollapsed(`-- Attempted To Push Value Of (${setting.id}) But Failed With Error`);
+          console.error(error);
+          console.groupEnd(`-- Attempted To Push Value Of (${setting.id}) But Failed With Error`);
+        }
+      });
+      console.groupEnd("Pushing All Values");
+    } else {
+      const setting = this.settings.get(name);
+      try {
+        const settingElement = document.getElementById(`${setting.id}-modifier-input`);
+        settingElement.dispatchEvent(new Event("pushValue"));
+        console.log(`-- Pushed Value Of ${setting.id}`);
+      } catch (error) {
+        console.warn(`-- Attempted To Push Value Of ${setting.id} But Failed With Error: ${error}`);
+      }
+    }
+    return this;
+  }
+  return null;
+}
+
+  static pushHtml(args = {}) {
+    const { 
+      target = "settingsArea" 
+    } = args;
+    
+    return new Promise(resolve => {
+      const targetElement = document.getElementById(target);
+      targetElement.innerHTML = this.settingsHtml.innerHTML;
+      resolve();
+    });
+}
+
+  static addEventListeners () {
+    this.settingEvents.forEach((elements) => {
+      PageManager.addListeners(elements);
+    });
+
+    return this;
+  }
+}
+
+
+// add all of the settings for the website \\
+async function addSettings() {
+  console.groupCollapsed("Adding Settings");
+  console.time("Setting Add Time");
+
+  Settings.addSetting("Volume").slider({ defaultValue: (50) }).push();
+  Settings.addSetting("Zoom")
+    .slider({ min: (0.5), max: (2), defaultValue: (1), step: (0.1) })
+    .push({ 
+      withValueHandler: () => {
+        document.documentElement.style.setProperty('--textMulti', Settings.getValue("Zoom")); 
+      }}
+    );
+
+  console.timeEnd("Setting Add Time");
+  console.groupEnd("Adding Settings");
+}
+</script>

@@ -1,0 +1,161 @@
+<!-- JS-Animations.html -->
+
+<script id='JS-Animations'>
+  
+/*
+class Animator {
+
+  static {
+    this.targetElementId = null;
+    this.targetElement = null;
+    this.animationType = null;
+  }
+
+  .fade({})
+
+}
+*/
+
+function fadeElement({elementId, type, direction, duration, distance}) {
+  return new Promise(resolve => {
+    type = (typeof type === 'string')? type.toLowerCase() : "none";
+    direction = (typeof direction === 'string')? direction.toLowerCase() : "none";
+    duration = duration || 0;
+    duration *= 1000;
+    distance = distance || 0;
+
+    const element = document.getElementById(elementId);
+
+    let 
+      ease, 
+      opacityStart, 
+      opacityEnd, 
+      displayStart, 
+      displayEnd, 
+      visibilityStart, 
+      visibilityEnd;
+
+    let goIn = false;
+
+    switch (type) {
+      case "in":
+        ease = "ease-out";
+        opacityStart = 0;
+        opacityEnd = 1;
+        displayStart = "none";
+        displayEnd = "block";
+        visibilityStart = "hidden";
+        visibilityEnd = "visible";
+        goIn = true;
+        break;
+      case "out":
+        ease = "ease-in";
+        opacityStart = 1;
+        opacityEnd = 0;
+        displayStart = "block";
+        displayEnd = "none";
+        visibilityStart = "visible";
+        visibilityEnd = "hidden";
+        goIn = false;
+        break;
+      case "none":
+        if (window.getComputedStyle(element).getPropertyValue("opacity") > 0) {
+          ease = "ease-in";
+          opacityStart = 1;
+          opacityEnd = 0;
+          displayStart = "block";
+          displayEnd = "none";
+          visibilityStart = "visible";
+          visibilityEnd = "hidden";
+          goIn = false;
+        } 
+        else {
+          ease = "ease-out";
+          opacityStart = 0;
+          opacityEnd = 1;
+          displayStart = "none";
+          displayEnd = "block";
+          visibilityStart = "hidden";
+          visibilityEnd = "visible";
+          goIn = true;
+        }
+        break;
+    }
+
+    let 
+      yStart, 
+      yEnd, 
+      xStart, 
+      xEnd;
+
+    switch (direction) {
+      case "up":
+        xStart = 0;
+        xEnd = 0;
+        if (goIn) {
+          yStart = -distance;
+          yEnd = 0;
+        } else {
+          yStart = 0;
+          yEnd = -distance;
+        }
+        break;
+      case "down":
+        xStart = 0;
+        xEnd = 0;
+        if (goIn) {
+          yStart = distance;
+          yEnd = 0;
+        } else {
+          yStart = 0;
+          yEnd = distance;
+        }
+        break;
+      case "left":
+        yStart = 0;
+        yEnd = 0;
+        if (goIn) {
+          xStart = -distance;
+          xEnd = 0;
+        } else {
+          xStart = 0;
+          xEnd = -distance;
+        }
+        break;
+      case "right":
+        yStart = 0;
+        yEnd = 0;
+        if (goIn) {
+          xStart = distance;
+          xEnd = 0;
+        } else {
+          xStart = 0;
+          xEnd = distance;
+        }
+        break;
+      case "none":
+        xStart = 0;
+        yStart = 0;
+        xEnd = 0;
+        yEnd = 0;
+        break;
+    }
+
+    const animation = [
+      { offset: 0, opacity: opacityStart, transform: `translate(${xStart}px, ${yStart}px)`, display: displayStart },
+      { offset: 0.99, opacity: opacityEnd, transform: `translate(${xEnd}px, ${yEnd}px)` },
+      { offset: 1, opacity: opacityEnd, transform: `translate(${xEnd}px, ${yEnd}px)`, display: displayEnd }
+    ];
+
+    const animationTiming = {
+      duration: duration,
+      easing: ease,
+      fill: "forwards",
+    };
+
+    let animationObj = element.animate(animation, animationTiming);
+    animationObj.onfinish = () => resolve();
+  });
+}
+
+</script>

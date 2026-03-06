@@ -1,0 +1,88 @@
+<!-- JS-Javascript.html -->
+
+<script id='JS-Javascript'>
+// returns a unique ID as a string
+function createId() {
+  const id = Date.now() + Math.floor(Math.random() * 1000);
+  return id;
+}
+
+// takes input string and returns it in camelCase format
+String.prototype.toCamelCase = function () {
+  const stringArr = this.split(" ");
+  let camelString = "";
+  for (let i = 0; i < stringArr.length; i++) {
+    if (i > 0) {
+      camelString += stringArr[i].substr(0,1).toUpperCase();
+      camelString += stringArr[i].substr(1).toLowerCase();
+    } else {
+      camelString += stringArr[i].toLowerCase();
+    }
+  }
+  return camelString;
+}
+
+// animates text to look as if being typed
+function typeText(args = {}) {
+  const {
+    text = "null",
+    elementId = null,
+    element: targetElement,
+    animationType = "replace",
+    speed = 100
+  } = args;
+
+  const element = targetElement || document.getElementById(elementId);
+  
+  switch (animationType) {
+    case "replace":
+      let i = 0;
+      const typeChar = () => {
+        if (i < text.length) {
+          element.innerHTML = text.substring(0, i + 1);
+          i++;
+          setTimeout(typeChar, speed);
+        }
+      };
+      typeChar();
+      break;
+      
+    case "addToEnd":
+      let j = 0;
+      const appendChar = () => {
+        if (j < text.length) {
+          element.innerHTML += text.charAt(j);
+          j++;
+          setTimeout(appendChar, speed);
+        }
+      };
+      appendChar();
+      break;
+
+    case "retype":
+      let k = element.innerHTML.length;
+      const currentText = element.innerHTML;
+      
+      const deleteChar = () => {
+        if (k > 0) {
+          element.innerHTML = currentText.substring(0, k - 1);
+          k--;
+          setTimeout(deleteChar, speed);
+        } else {
+          let m = 0;
+          const retypeChar = () => {
+            if (m < text.length) {
+              element.innerHTML = text.substring(0, m + 1);
+              m++;
+              setTimeout(retypeChar, speed);
+            }
+          };
+          retypeChar();
+        }
+      };
+      deleteChar();
+      break;
+  }
+}
+
+</script>
